@@ -49,7 +49,7 @@ optionally `finufft` / `cufinufft`.
 
 ## 2. Documentation Rules (Docstrings)
 
-* **Format:** Numpy-style docstrings (PEP 257 compatible).
+* **Format:** NumPy-style docstrings (PEP 257 compatible).
 * **No redundant types:** Do **not** repeat type information in `Args:` or
   `Returns:` descriptions — rely on the function signature annotations.
 * **Language:** Preserve existing notes and warnings close to their original

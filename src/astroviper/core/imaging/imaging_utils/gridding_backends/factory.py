@@ -70,8 +70,6 @@ def get_backend(
     *,
     image_size: Optional[npt.NDArray[np.int_]] = None,
     cell_size: Optional[npt.NDArray[np.float64]] = None,
-    oversampling: int = 100,
-    support: int = 7,
     chan_mode: str = "continuum",
     **backend_kwargs,
 ) -> GriddingBackend:
@@ -80,20 +78,31 @@ def get_backend(
     Parameters
     ----------
     name : str
-        ``"standard"`` (default) or ``"finufft"``.
+        ``"standard"`` (default) or ``"finufft"``, etc.
     image_size : array-like of int, shape (2,)
         Number of pixels ``[ny, nx]``.
     cell_size : array-like of float, shape (2,)
         Pixel size in radians ``[dy, dx]``.
-    oversampling : int
-        Oversampling of the convolution kernel (standard backend).
-    support : int
-        Support half-width of the convolution kernel (standard backend).
     chan_mode : str
         ``"continuum"`` or ``"cube"``.
     **backend_kwargs
-        Extra keyword arguments forwarded to the backend constructor
-        (e.g. ``eps`` for the FINUFFT backend).
+        Extra keyword arguments forwarded to the backend constructor.
+        Notable options include:
+
+        - ``oversampling`` *(int)* – Oversampling of the convolution
+          kernel.  Used by ``standard`` and ``wprojection`` backends
+          (default ``100``).
+        - ``support`` *(int)* – Support half-width of the convolution
+          kernel.  Used by ``standard`` and ``wprojection`` backends
+          (default ``7``).
+        - ``eps`` *(float)* – Requested precision for FINUFFT / cuFINUFFT
+          backends (default ``1e-6``).
+        - ``nthreads`` *(int)* – Number of OpenMP threads for FINUFFT
+          backends.  ``0`` (default) uses all available cores; any
+          positive integer limits parallelism.  Accepted but ignored by
+          GPU (cuFINUFFT) backends.
+        - ``wplanes`` *(int)* – Number of w-planes for the w-projection
+          and w-stacking backends.
 
     Returns
     -------
@@ -110,8 +119,6 @@ def get_backend(
     return cls(
         image_size=np.asarray(image_size),
         cell_size=np.asarray(cell_size, dtype=np.float64),
-        oversampling=oversampling,
-        support=support,
         chan_mode=chan_mode,
         **backend_kwargs,
     )

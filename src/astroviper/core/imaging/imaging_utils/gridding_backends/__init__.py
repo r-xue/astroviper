@@ -19,6 +19,15 @@ Quick start::
         eps=1e-6,
     )
 
+    # FINUFFT with explicit thread control (4 OpenMP threads)
+    backend = get_backend(
+        "finufft",
+        image_size=[200, 200],
+        cell_size=[cell_rad, cell_rad],
+        eps=1e-6,
+        nthreads=4,
+    )
+
     # Use identically:
     grid, sumwt = backend.grid(vis_data, uvw, weight, freq_chan)
 

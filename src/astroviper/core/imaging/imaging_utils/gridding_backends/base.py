@@ -22,10 +22,6 @@ class GriddingBackend(ABC):
         Number of pixels ``[ny, nx]``.
     cell_size : ndarray of float64, shape (2,)
         Pixel size in radians ``[dy, dx]``.
-    oversampling : int
-        Oversampling factor for the convolution kernel.
-    support : int
-        Half-width of the convolution kernel in pixels.
     chan_mode : str
         ``'continuum'`` (all channels -> 1 image) or ``'cube'``
         (one image plane per channel).
@@ -36,11 +32,9 @@ class GriddingBackend(ABC):
         image_size: npt.NDArray[np.int_],
         cell_size: npt.NDArray[np.float64],
         *,
-        oversampling: int = 100,
-        support: int = 7,
         chan_mode: str = "continuum",
     ):
-        """Initialize the backend with grid geometry and kernel parameters.
+        """Initialize the backend with grid geometry.
 
         Parameters
         ----------
@@ -48,18 +42,12 @@ class GriddingBackend(ABC):
             Number of pixels ``[ny, nx]``.
         cell_size : array-like of float, shape (2,)
             Pixel size in radians ``[dy, dx]``.
-        oversampling : int, optional
-            Oversampling factor for the convolution kernel.
-        support : int, optional
-            Half-width of the convolution kernel in pixels.
         chan_mode : str, optional
             ``'continuum'`` (all channels -> 1 image) or ``'cube'``
             (one image plane per channel).
         """
         self.image_size = np.asarray(image_size, dtype=int)
         self.cell_size = np.asarray(cell_size, dtype=np.float64)
-        self.oversampling = int(oversampling)
-        self.support = int(support)
         self.chan_mode = str(chan_mode)
 
     # abstract interface
@@ -170,7 +158,5 @@ class GriddingBackend(ABC):
             f"{self.__class__.__name__}("
             f"image_size={self.image_size.tolist()}, "
             f"cell_size={self.cell_size.tolist()}, "
-            f"oversampling={self.oversampling}, "
-            f"support={self.support}, "
             f"chan_mode='{self.chan_mode}')"
         )

@@ -2,8 +2,7 @@
 
 Uses the Flatiron Institute Non-Uniform FFT library (``finufft``) for
 gridding (type-1 NUFFT) and degridding (type-2 NUFFT).  This avoids the
-explicit convolution loop used by the standard backend and can be
-significantly faster, especially for large datasets.
+explicit convolution loop used by the standard backend.
 
 Requires the ``finufft`` Python package::
 
@@ -43,15 +42,24 @@ class FinufftBackend(GriddingBackend):
     Parameters
     ----------
     eps : float
-        Requested relative precision for the NUFFT.  Smaller values are
+        Requested relative precision for FINUFFT.  Smaller values are
         more accurate but slower.  Default ``1e-6``.
+        This tolerance represents the combined truncation and approximation
+        error; FINUFFT automatically tunes its internal parameters to meet
+        this value.
+    nthreads : int
+        Number of OpenMP threads for FINUFFT to use.  ``0`` (the default)
+        means use all available cores.  Set to ``1`` for single-threaded
+        execution; any positive integer limits parallelism to that many
+        threads.
     **kwargs
         Forwarded to :class:`GriddingBackend`.
     """
 
-    def __init__(self, *args, eps: float = 1e-6, **kwargs):
+    def __init__(self, *args, eps: float = 1e-6, nthreads: int = 0, **kwargs):
         super().__init__(*args, **kwargs)
         self.eps = eps
+        self.nthreads = int(nthreads)
         # check availability so the user gets a clear error early
         self.finufft = _check_finufft()
 
@@ -59,21 +67,27 @@ class FinufftBackend(GriddingBackend):
 
     def _nufft2d1(self, x, y, strengths, n_modes, eps):
         """Type-1 NUFFT (non-uniform → uniform). CPU version."""
+        kwargs = dict(eps=eps)
+        if self.nthreads > 0:
+            kwargs["nthreads"] = self.nthreads
         return self.finufft.nufft2d1(
             x.astype(np.float64),
             y.astype(np.float64),
             strengths,
             n_modes,
-            eps=eps,
+            **kwargs,
         )
 
     def _nufft2d2(self, x, y, image_plane, eps):
         """Type-2 NUFFT (uniform → non-uniform). CPU version."""
+        kwargs = dict(eps=eps)
+        if self.nthreads > 0:
+            kwargs["nthreads"] = self.nthreads
         return self.finufft.nufft2d2(
             x.astype(np.float64),
             y.astype(np.float64),
             image_plane,
-            eps=eps,
+            **kwargs,
         )
 
     def _uvw_to_finufft_coords(
@@ -87,7 +101,7 @@ class FinufftBackend(GriddingBackend):
 
             f[k] = sum_j c_j  exp(+i k . x_j)
 
-        where x_j ∈ [-pi, pi) and k is the integer grid index centred on 0.
+        where x_j ∈ [-pi, pi) and k is the integer grid index centered on 0.
 
         The standard gridder maps ``u`` (metres) → pixel via::
 
@@ -322,7 +336,7 @@ class FinufftBackend(GriddingBackend):
             # polarizations have mostly valid data, this choice will cause
             # those samples to be treated as invalid for *all* polarizations,
             # since `valid` already excludes them before the per-pol refinement.
-            # This behaviour is currently by design (pol 0 acts as a reference
+            # This behavior is currently by design (pol 0 acts as a reference
             # quality gate). An alternative approach would be to construct
             # `valid` from a combined flag mask across polarizations (e.g.,
             # requiring that at least one polarization is unflagged), but that
@@ -375,15 +389,14 @@ class FinufftBackend(GriddingBackend):
         """Grid visibilities to a dirty image.
 
         For FINUFFT, the type-1 NUFFT with negated coordinates directly
-        produces the dirty image in mode ordering (DC at array centre).
-        No IFFT or spheroidal correction is needed — just normalise by
+        produces the dirty image in mode ordering (DC at array center).
+        No IFFT or spheroidal correction is needed — just normalize by
         the sum of weights.
 
         The FINUFFT type-1 already produces an *ifftshift'd* grid that is
-        in image (dirty map) form for our purposes, so we override
-        ``grid_to_image`` to skip both the spheroidal correction (the NUFFT
-        kernel is not a prolate spheroidal) and any additional FFT, and
-        simply normalise the NUFFT output by the sum of weights.
+        in dirty map form for our purposes, so we skip both the gridding kernel
+        correction or any additional FFT and simply normalize FINUFFT output
+        by the sum of weights.
         """
         if isinstance(vis, xarray.core.datatree.DataTree):
             list_vis = [vis]
@@ -413,7 +426,7 @@ class FinufftBackend(GriddingBackend):
             raise RuntimeError("No data was gridded")
 
         # The type-1 NUFFT output (using negated UVW coordinates computed in
-        # `_uvw_to_finufft_coords`) IS the dirty image — just normalise by
+        # `_uvw_to_finufft_coords`) IS the dirty image — just normalize by
         # sum of weights.
         for chan in range(resid_array.shape[0]):
             for corr in range(resid_array.shape[1]):

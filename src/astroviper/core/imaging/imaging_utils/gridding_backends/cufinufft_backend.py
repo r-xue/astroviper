@@ -47,15 +47,20 @@ class CufinufftBackend(FinufftBackend):
     Parameters
     ----------
     eps : float
-        Requested relative precision for the NUFFT.  Default ``1e-6``.
+        Requested relative precision for cuFINUFFT.  Default ``1e-6``.
+    nthreads : int
+        Accepted for API compatibility with :class:`FinufftBackend` but
+        **ignored** — cuFINUFFT runs on the GPU and does not use OpenMP
+        threads.
     **kwargs
         Forwarded to :class:`FinufftBackend`.
     """
 
-    def __init__(self, *args, eps: float = 1e-6, **kwargs):
+    def __init__(self, *args, eps: float = 1e-6, nthreads: int = 0, **kwargs):
         # Skip FinufftBackend.__init__'s finufft import; call grandparent
         super(FinufftBackend, self).__init__(*args, **kwargs)
         self.eps = eps
+
         self.finufft = _check_cufinufft()
         self._cp = _check_cupy()
 

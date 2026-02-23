@@ -28,7 +28,34 @@ class StandardBackend(GriddingBackend):
 
     This is the traditional approach used in radio-interferometry imaging
     (similar to CASA's ``StandardFTMachine``).
+
+    Parameters
+    ----------
+    oversampling : int
+        Oversampling factor for the convolution kernel.  Controls the
+        sub-pixel resolution of the gridding convolution function (GCF)
+        lookup table.  Default ``100``.
+    support : int
+        Half-width of the convolution kernel in grid cells.  A larger
+        value reduces aliasing.  Default ``7``.
+    **kwargs
+        Forwarded to :class:`GriddingBackend`.
     """
+
+    def __init__(self, *args, oversampling: int = 100, support: int = 7, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.oversampling = int(oversampling)
+        self.support = int(support)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"image_size={self.image_size.tolist()}, "
+            f"cell_size={self.cell_size.tolist()}, "
+            f"oversampling={self.oversampling}, "
+            f"support={self.support}, "
+            f"chan_mode='{self.chan_mode}')"
+        )
 
     def grid(
         self,
